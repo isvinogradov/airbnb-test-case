@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>beer-online.ru</title>
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+  <div class="content clearfix">
+    <!-- БЛОК С БАЛАНСОМ -->
+    <div class="balance clearfix">
+      <div class="balance_block">
+        <p class="balance_label">Текущий баланс</p>
+        <div class="refresh_balance">
+          <p class="balance_value">427 384.34</p> 
+          <div class="icon_currency"><i class="fa fa-rub"></i></div>
+          <button class="getbalance" type="button" name="button"><i class="fa fa-refresh"></i></button>
+          <div class="refresh_time">1 секунда</div>
+        </div>
+        <!-- БЛОК ПОПОЛНЕНИЯ -->
+        <div class="deposit">
+          <input class="deposit_block sum_field" type="text" name="" value="" placeholder="введите сумму">
+          <button class="deposit_block add" type="button" name="addarb">Пополнить</button>
+        </div>  
+      </div>
+    </div>
+    <div class="actions clearfix">
+      <!-- БЛОК ИСТОРИИ ТРАНЗАКЦИЙ -->
+      <div class="operations">
+        <p class="op_row"><span class="dep-plus">+630.54 <i class="fa fa-rub"></i></span> 01.01.2017 14:34:12</p>
+        <button class="more_transactions" type="button" name="button"><i class="fa fa-chevron-circle-down"></i> Ещё 50 транзакций</button>
+      </div>
+      <div class="action_wrapper">
+        <div class="action_add">
+          <button class="field_action" type="button" onclick="deposit(100);"><i class="fa fa-credit-card"></i> Пополнить на 100<i class="fa fa-rub"></i></button>
+          <button class="field_action" type="button" onclick="deposit(500);"><i class="fa fa-credit-card"></i> Пополнить на 500<i class="fa fa-rub"></i></button>
+          <button class="field_action" type="button" onclick="deposit(10000);"><i class="fa fa-credit-card"></i> Пополнить на 10 000<i class="fa fa-rub"></i></button>
+        </div>
+        <!-- БЛОК СПИСАНИЯ -->
+        <div class="action_buy">
+          <button class="field_action buy_btn" type="button" onclick="deposit(-1337.37);"><i class="fa fa-beer"></i> Купить Hofbräuhaus</button>
+          <button class="field_action buy_btn" type="button" onclick="deposit(-250.15);"><i class="fa fa-beer"></i> Купить Boddington pub ale</button>
+          <button class="field_action buy_btn" type="button" onclick="deposit(-304.40);"><i class="fa fa-beer"></i> Купить McCallum's stout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function() {
+      operations_offset = 0;
+    });
+
+    function numberWithCommas(x) {
+      return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    };
+
+    $(".getbalance").click(function(e) {
+      var start_time = new Date().getTime();
+      e.preventDefault();
+      $.ajax({
+        type: "GET",
+        url: "/balance?partner_id=" + $.cookie("partner_id"),
+        success: function(result) {
+          $('.balance_value').text(numberWithCommas(parseFloat(result).toFixed(2)));
+          var end_time = new Date().getTime();
+          duration = end_time - start_time;
+          $('.refresh_time').text('обновлено за ' + duration.toString() + ' мс');
+        },
+        error: function(result) {
+          alert('error');
+        }
+      });
+    });
+
+    $(".more_transactions").click(function(e) {
+      e.preventDefault();
+      $.ajax({
+        type: "GET",
+        url: "/operations",
+        data: {
+          partner_id: $.cookie("partner_id"),
+          size: 50,
+          offset: operations_offset
+        },
+        success: function(result) {
+          if (result.operations.length) {
+            for (i of result.operations) {
+              var operation = document.createElement('p');
+              operation.className = 'op_row'
+              operation.innerHTML = i.ts + ' ' + i.op_val + '₽';
+              $('.operations').append(operation);
+            };
+            operations_offset += 50;
+          } else {
+            $(".more_transactions").text('Все транзакции загружены');
+            $(".more_transactions").prop('disabled', true);
+          };
+        },
+        error: function(result) {
+          alert('error');
+        }
+      });
+    });
+    
+    function deposit (amount) {
+      $.ajax({
+        type: "POST",
+        url: "/operations",
+        data: {
+          partner_id: $.cookie("partner_id"),
+          val: amount
+        },
+        success: function(result) {
+        },
+        error: function(result) {
+          alert('error');
+        }
+      });
+    };
+  </script>
+</body>
+
+</html>
